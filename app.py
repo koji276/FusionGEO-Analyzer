@@ -86,7 +86,7 @@ with st.sidebar:
 # メインエリア
 # ═══════════════════════════════════════════════════════════════
 st.title("🔬 FusionGEO Analyzer")
-st.markdown("**AIエージェントに引用される確率を、6領域・20項目で自動診断**")
+st.markdown("**AIエージェントに引用される確率を、6+1領域・28項目で自動診断**")
 st.markdown("---")
 
 # ── URL入力 ──────────────────────────────────────────────
@@ -223,7 +223,7 @@ if analyze_btn and target_url:
     st.markdown("---")
     
     # ── レーダーチャート ──────────────────────────────
-    st.subheader("📡 6領域スコア")
+    st.subheader("📡 6領域（＋１：グローバル）スコア")
     
     radar_df = pd.DataFrame(scores["radar_data"])
     
