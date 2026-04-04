@@ -93,6 +93,9 @@ with col_btn:
     analyze_btn = st.button("🔬 解析開始", type="primary", use_container_width=True)
 
 # --- URL入力のすぐ下に配置 ---
+sns_data = ""  # 初期化
+px_data = ""   # 初期化
+
 if target_url:
     with st.expander("🚀 Step 2: 外部信頼性の調査 (人/Trust Graph評価)", expanded=False):
         st.markdown("##### 1. Perplexityでリサーチ")
@@ -127,6 +130,7 @@ URL: {target_url}
                 placeholder="リサーチ結果をそのままペースト...",
                 height=100
             )
+
 # ── 解析実行 ──────────────────────────────────────────────
 if analyze_btn and target_url:
     if not target_url.startswith("http"):
@@ -157,7 +161,15 @@ if analyze_btn and target_url:
             st.write("🤖 Engine 2: LLMセマンティック解析を実行中...")
             try:
                 page_html = requests.get(target_url, timeout=10).text
-                e2_result = analyze_content_with_llm(page_html, api_key, llm_model)
+                # 修正ポイント: インポートしたSNSデータとPerplexity回答を引数として渡す
+                # ※ core/llm_analyzer.py 側の実装がこれらを受け取れるようになっている前提です
+                e2_result = analyze_content_with_llm(
+                    page_html, 
+                    api_key, 
+                    llm_model, 
+                    sns_data=sns_data, 
+                    px_data=px_data
+                )
                 if e2_result and e2_result.get("success", False):
                     st.write("✅ LLM解析完了")
                 else:
