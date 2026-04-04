@@ -32,7 +32,7 @@ DOMAIN_WEIGHTS = {
 }
 
 DOMAIN_WEIGHTS_GLOBAL = {
-    "D1": 15, "D2": 20, "D3": 12, "D4": 18, "D5": 8, "D6": 7, "D7": 20
+    "D1": 1, "D2": 1, "D3": 1, "D4": 1, "D5": 1, "D6": 1, "D7": 1
 }
 
 DOMAIN_LABELS = {
@@ -97,6 +97,11 @@ def aggregate_scores(
         if item_id not in all_scores:
             all_scores[item_id] = {"id": item_id, "score": score, "detail": "手動チェック"}
     
+    # 各領域の全項目数を定義（未評価項目も0点としてカウントするため）
+    DOMAIN_ITEM_COUNTS = {
+        "D1": 4, "D2": 5, "D3": 4, "D4": 4, "D5": 4, "D6": 3, "D7": 4
+    }
+    
     # 領域ごとの集計
     domain_items: dict[str, list[int]] = {d: [] for d in domain_ids}
     for item_id, check in all_scores.items():
@@ -105,11 +110,12 @@ def aggregate_scores(
             domain_items[domain].append(check.get("score", 0))
     
     domain_scores = {}
-    for domain, scores in domain_items.items():
-        if scores:
-            domain_scores[domain] = round(sum(scores) / len(scores))
-        else:
-            domain_scores[domain] = 0
+    for domain in domain_ids:
+        scores_list = domain_items.get(domain, [])
+        total_items = DOMAIN_ITEM_COUNTS.get(domain, max(len(scores_list), 1))
+        # 全項目数で割る（未評価項目は0点として分母に含める）
+        total_points = sum(scores_list)
+        domain_scores[domain] = round(total_points / total_items)
     
     # 加重平均で総合スコア
     weighted_sum = sum(domain_scores.get(d, 0) * weights[d] for d in weights)
