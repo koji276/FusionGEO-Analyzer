@@ -92,6 +92,41 @@ with col_input:
 with col_btn:
     analyze_btn = st.button("🔬 解析開始", type="primary", use_container_width=True)
 
+# --- URL入力のすぐ下に配置 ---
+if target_url:
+    with st.expander("🚀 Step 2: 外部信頼性の調査 (人/Trust Graph評価)", expanded=False):
+        st.markdown("##### 1. Perplexityでリサーチ")
+        # リサーチ用の特製プロンプトを生成
+        research_prompt = f"""以下のURLとその運営者について、GEO（AIエンジン最適化）の観点から調査してください：
+URL: {target_url}
+
+【調査項目】
+1. LinkedInでの発信力（著者名、フォロワー数、直近の投稿のエンゲージメント）
+2. AIエンジン（ChatGPT/Perplexity等）での引用状況（Citation Share）
+3. 信頼できる外部メディアやWikipedia等での言及・Entityとしての認知度
+
+上記を要約し、信頼性スコア算出のためのエビデンスを提示してください。"""
+
+        # st.code を使うと、ユーザーが右上のボタンで1クリックコピーできます
+        st.code(research_prompt, language="markdown")
+        st.caption("☝️ 上記プロンプトをコピーして Perplexity 等で実行してください")
+
+        st.divider()
+
+        st.markdown("##### 2. 調査結果のインポート")
+        col_sns, col_px = st.columns(2)
+        with col_sns:
+            sns_data = st.text_area(
+                "LinkedIn / SNSの投稿・スタッツ", 
+                placeholder="投稿内容や反応数をペースト...",
+                height=100
+            )
+        with col_px:
+            px_data = st.text_area(
+                "Perplexity等の回答", 
+                placeholder="リサーチ結果をそのままペースト...",
+                height=100
+            )
 # ── 解析実行 ──────────────────────────────────────────────
 if analyze_btn and target_url:
     if not target_url.startswith("http"):
