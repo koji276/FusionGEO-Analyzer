@@ -1,0 +1,263 @@
+{
+  "version": "2026-04",
+  "title": "2026年版 GEO（生成エンジン最適化）完全監査チェックリスト",
+  "subtitle": "AIエージェントに引用され、知識グラフの中枢に陣取るための20項目",
+  "domains": [
+    {
+      "id": "D1",
+      "name": "人：発信者の信頼性とネットワーク",
+      "name_en": "Trust Graph",
+      "engine": "E2+E3",
+      "items": [
+        {
+          "id": "D1-01",
+          "title": "専門領域の極端な絞り込み",
+          "description": "特定のニッチ領域（例：AI戦略 × 製造業）の第一人者か？",
+          "auto_check": false,
+          "engine": "E2",
+          "check_method": "llm_analysis_of_linkedin_or_self_report"
+        },
+        {
+          "id": "D1-02",
+          "title": "Verified Identityの確立",
+          "description": "LinkedIn、GitHub、メディア等がsameAsで紐付いているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "schema_org_sameAs_property_detection"
+        },
+        {
+          "id": "D1-03",
+          "title": "エンゲージメント・グラフの構築",
+          "description": "専門家コミュニティからの反応（いいね・コメント）を得ているか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "self_report_or_linkedin_api"
+        },
+        {
+          "id": "D1-04",
+          "title": "AI解析用投稿フォーマットの採用",
+          "description": "投稿が「結論→箇条書き→独自の洞察」の構造か？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_structure_analysis"
+        }
+      ]
+    },
+    {
+      "id": "D2",
+      "name": "技術：エージェント制御と抽出可能性",
+      "name_en": "Extractability",
+      "engine": "E1",
+      "items": [
+        {
+          "id": "D2-01",
+          "title": "robots.txtの交通整理",
+          "description": "学習用は制限し、引用用ボットは許可しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "robots_txt_parse"
+        },
+        {
+          "id": "D2-02",
+          "title": "llms.txt / llms-full.txtの設置",
+          "description": "ドメイン直下にAI専用サイトマップを配備しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "http_get_llms_txt"
+        },
+        {
+          "id": "D2-03",
+          "title": "セマンティックHTMLの徹底",
+          "description": "<article> <section>で本文をノイズから分離しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "html_tag_detection"
+        },
+        {
+          "id": "D2-04",
+          "title": "300文字のチャンク化設計",
+          "description": "1段落1トピック、冒頭に結論を配置しているか？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "paragraph_length_and_structure_analysis"
+        },
+        {
+          "id": "D2-05",
+          "title": "JS実行依存の解消",
+          "description": "初期HTML（プレーンテキスト）のみでコア情報を取得可能か？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "noscript_content_ratio"
+        }
+      ]
+    },
+    {
+      "id": "D3",
+      "name": "技術：構造化データによる意味的接続",
+      "name_en": "Semantic Density",
+      "engine": "E1+E2",
+      "items": [
+        {
+          "id": "D3-01",
+          "title": "Entityの証明（Schema.org）",
+          "description": "Person/OrgプロパティでWikipediaやSNSと紐付けているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "json_ld_schema_detection"
+        },
+        {
+          "id": "D3-02",
+          "title": "SignificantLinkの実装",
+          "description": "そのトピックの「権威ある柱」となるページを明示しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "significant_link_detection"
+        },
+        {
+          "id": "D3-03",
+          "title": "FAQ & HowToスキーマの設置",
+          "description": "Q&A形式や手順データを構造化しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "faq_howto_schema_detection"
+        },
+        {
+          "id": "D3-04",
+          "title": "高密度な概念（Entity）の網羅",
+          "description": "関連する専門用語や背景を網羅し、専門性を提示しているか？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_semantic_density_score"
+        }
+      ]
+    },
+    {
+      "id": "D4",
+      "name": "価値：情報の差分と鮮度",
+      "name_en": "Information Gain",
+      "engine": "E2",
+      "items": [
+        {
+          "id": "D4-01",
+          "title": "独自データ（First-party Data）の提示",
+          "description": "コミュニティデータや現場の導入記録など一次情報を提示しているか？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_first_party_data_detection"
+        },
+        {
+          "id": "D4-02",
+          "title": "明確なPOV（独自の視点）の提示",
+          "description": "一般論を避け、鋭い対立構造や独自の予測を提示しているか？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_pov_strength_score"
+        },
+        {
+          "id": "D4-03",
+          "title": "専門用語の断定的な「定義」",
+          "description": "「〇〇とは××である」とAIが抽出しやすい形か？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_definitive_statement_detection"
+        },
+        {
+          "id": "D4-04",
+          "title": "60日間フレッシュネス・ループ",
+          "description": "60日ごとに情報を更新し、時間的言語を組み込んでいるか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "time_tag_freshness_check"
+        }
+      ]
+    },
+    {
+      "id": "D5",
+      "name": "拡張：マルチモーダル＆デジタルPR",
+      "name_en": "Trust Graph Extension",
+      "engine": "E2+E3",
+      "items": [
+        {
+          "id": "D5-01",
+          "title": "VLM（視覚言語モデル）への最適化",
+          "description": "図解に対し、alt属性や周辺テキストで意図を説明しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "img_alt_and_context_check"
+        },
+        {
+          "id": "D5-02",
+          "title": "動画データの構造化",
+          "description": "タイムスタンプ付き文字起こしとMarkdown要約を紐付けているか？",
+          "auto_check": false,
+          "engine": "E2",
+          "check_method": "self_report_or_page_transcript_detection"
+        },
+        {
+          "id": "D5-03",
+          "title": "エンティティの共起（Co-occurrence）",
+          "description": "外部メディア等で技術キーワードと自社名・個人名がセットで語られているか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "web_search_co_occurrence"
+        },
+        {
+          "id": "D5-04",
+          "title": "情報の透明性（Citation）",
+          "description": "信頼できる外部ソースへのライブURLを配置しているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "outbound_link_authority_check"
+        }
+      ]
+    },
+    {
+      "id": "D6",
+      "name": "Audit：成功の測定指標",
+      "name_en": "Measurement",
+      "engine": "E3",
+      "items": [
+        {
+          "id": "D6-01",
+          "title": "引用シェア（Citation Share）",
+          "description": "主要テーマでAIが回答した際、自社ソースの言及数を計測しているか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "ai_citation_monitoring"
+        },
+        {
+          "id": "D6-02",
+          "title": "AI内センチメント（Sentiment）",
+          "description": "AIの回答内でポジティブに推奨されているか監視しているか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "ai_sentiment_monitoring"
+        },
+        {
+          "id": "D6-03",
+          "title": "AIエージェントのログ分析",
+          "description": "AIボットの巡回頻度をサーバーログから定期監査しているか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "server_log_bot_analysis"
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "method": "weighted_average_per_domain",
+    "domain_weights": {
+      "D1": 20,
+      "D2": 25,
+      "D3": 15,
+      "D4": 20,
+      "D5": 10,
+      "D6": 10
+    },
+    "item_score": {
+      "pass": 100,
+      "partial": 50,
+      "fail": 0
+    }
+  }
+}
