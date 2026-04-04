@@ -1,6 +1,6 @@
 """
 FusionGEO Analyzer — Score Aggregator
-Engine 1 + Engine 2 の結果を6領域に集約し、レーダーチャートデータを生成
+Engine 1 + Engine 2 の結果を6（or 7）領域に集約し、レーダーチャートデータを生成
 """
 
 import json
@@ -23,10 +23,16 @@ ITEM_TO_DOMAIN = {
     "D5-01": "D5", "D5-02": "D5", "D5-03": "D5", "D5-04": "D5",
     # D6: Audit
     "D6-01": "D6", "D6-02": "D6", "D6-03": "D6",
+    # D7: Global Readiness (optional)
+    "D7-01": "D7", "D7-02": "D7", "D7-03": "D7", "D7-04": "D7",
 }
 
 DOMAIN_WEIGHTS = {
     "D1": 20, "D2": 25, "D3": 15, "D4": 20, "D5": 10, "D6": 10
+}
+
+DOMAIN_WEIGHTS_GLOBAL = {
+    "D1": 15, "D2": 20, "D3": 12, "D4": 18, "D5": 8, "D6": 7, "D7": 20
 }
 
 DOMAIN_LABELS = {
@@ -36,36 +42,35 @@ DOMAIN_LABELS = {
     "D4": "価値 (Information Gain)",
     "D5": "拡張 (Multimodal & PR)",
     "D6": "Audit (測定指標)",
+    "D7": "グローバル (Global Readiness)",
 }
 
 DOMAIN_LABELS_SHORT = {
     "D1": "人", "D2": "抽出性", "D3": "接続性",
-    "D4": "価値", "D5": "拡張", "D6": "計測"
+    "D4": "価値", "D5": "拡張", "D6": "計測",
+    "D7": "グローバル"
 }
 
 
 def aggregate_scores(
     engine1_checks: list[dict],
     engine2_checks: list[dict] | None = None,
-    manual_checks: dict[str, int] | None = None
+    manual_checks: dict[str, int] | None = None,
+    global_mode: bool = False
 ) -> dict:
     """
-    Engine 1/2の結果 + 手動チェックを集約し、6領域スコアを算出。
+    Engine 1/2の結果 + 手動チェックを集約し、6（or 7）領域スコアを算出。
     
     Args:
         engine1_checks: static_crawler.analyze_url()["checks"]
         engine2_checks: llm_analyzer.analyze_content_with_llm()["checks"]
-        manual_checks: {"D1-01": 100, "D1-03": 0, ...} 手動チェック結果
-    
-    Returns:
-        {
-            "domain_scores": {"D1": 65, "D2": 80, ...},
-            "total_score": 72,
-            "radar_data": [{"domain": "人", "score": 65}, ...],
-            "item_details": {"D2-01": {"score": 100, "detail": "..."}, ...},
-            "improvement_priorities": [{"id": "D2-02", "score": 0, "action": "..."}, ...]
-        }
+        manual_checks: {"D1-01": 100, ...} 手動チェック結果
+        global_mode: True の場合、D7 (Global Readiness) を含む7領域で評価
     """
+    # 使用する重み付けを選択
+    weights = DOMAIN_WEIGHTS_GLOBAL if global_mode else DOMAIN_WEIGHTS
+    domain_ids = list(weights.keys())
+    
     # 全項目のスコアを集約
     all_scores: dict[str, dict] = {}
     
@@ -77,7 +82,6 @@ def aggregate_scores(
     for check in (engine2_checks or []):
         item_id = check["id"]
         if item_id in all_scores:
-            # Engine 1より高いスコアならEngine 2を採用、低ければ平均
             e1_score = all_scores[item_id].get("score", 0)
             e2_score = check.get("score", 0)
             if e2_score > e1_score:
@@ -92,13 +96,12 @@ def aggregate_scores(
     for item_id, score in (manual_checks or {}).items():
         if item_id not in all_scores:
             all_scores[item_id] = {"id": item_id, "score": score, "detail": "手動チェック"}
-        # 既にある場合は上書きしない（自動判定優先）
     
     # 領域ごとの集計
-    domain_items: dict[str, list[int]] = {d: [] for d in DOMAIN_WEIGHTS}
+    domain_items: dict[str, list[int]] = {d: [] for d in domain_ids}
     for item_id, check in all_scores.items():
         domain = ITEM_TO_DOMAIN.get(item_id)
-        if domain:
+        if domain and domain in domain_items:
             domain_items[domain].append(check.get("score", 0))
     
     domain_scores = {}
@@ -106,22 +109,26 @@ def aggregate_scores(
         if scores:
             domain_scores[domain] = round(sum(scores) / len(scores))
         else:
-            domain_scores[domain] = 0  # 未評価
+            domain_scores[domain] = 0
     
     # 加重平均で総合スコア
-    weighted_sum = sum(domain_scores[d] * DOMAIN_WEIGHTS[d] for d in DOMAIN_WEIGHTS)
-    total_weight = sum(DOMAIN_WEIGHTS.values())
+    weighted_sum = sum(domain_scores.get(d, 0) * weights[d] for d in weights)
+    total_weight = sum(weights.values())
     total_score = round(weighted_sum / total_weight)
     
-    # レーダーチャートデータ
+    # レーダーチャートデータ（6角形 or 7角形）
     radar_data = [
-        {"domain": DOMAIN_LABELS_SHORT[d], "domain_full": DOMAIN_LABELS[d], "score": domain_scores[d]}
-        for d in ["D1", "D2", "D3", "D4", "D5", "D6"]
+        {"domain": DOMAIN_LABELS_SHORT[d], "domain_full": DOMAIN_LABELS[d], "score": domain_scores.get(d, 0)}
+        for d in domain_ids
     ]
     
-    # 改善優先度（スコアが低い項目をリストアップ）
+    # 改善優先度
     improvement_priorities = []
     for item_id, check in sorted(all_scores.items(), key=lambda x: x[1].get("score", 0)):
+        # global_mode=Falseの時、D7項目はスキップ
+        domain = ITEM_TO_DOMAIN.get(item_id)
+        if not global_mode and domain == "D7":
+            continue
         score = check.get("score", 0)
         if score < 60:
             improvement_priorities.append({
@@ -136,7 +143,8 @@ def aggregate_scores(
         "total_score": total_score,
         "radar_data": radar_data,
         "item_details": all_scores,
-        "improvement_priorities": improvement_priorities[:10]  # 上位10件
+        "improvement_priorities": improvement_priorities[:10],
+        "global_mode": global_mode
     }
 
 
@@ -167,6 +175,10 @@ def _get_improvement_action(item_id: str, score: int) -> str:
         "D6-01": "AIの回答での自社Citation Shareを定期計測してください",
         "D6-02": "AI回答内のセンチメント（推奨度）を監視してください",
         "D6-03": "サーバーログでAIボットの巡回頻度を確認してください",
+        "D7-01": "LinkedIn等で英語での専門的な発信を開始してください",
+        "D7-02": "hreflangタグとsameAsで日英エンティティを紐付けてください",
+        "D7-03": "英語圏のAIエンジンでの引用実績を確認・構築してください",
+        "D7-04": "機械翻訳ではなく、英語圏向けの独自インサイトを作成してください",
     }
     return actions.get(item_id, "改善が必要です")
 
