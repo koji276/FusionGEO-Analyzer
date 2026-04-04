@@ -1,127 +1,137 @@
 # FusionGEO Analyzer
 
-URLを入力するだけで「AIエージェントに引用される確率」を6領域・20項目で自動診断し、改善提案まで出すSaaSツール。BYOK（APIキー持ち込み）+ ラチェット型従量課金モデル。
+URLを入力するだけで「AIエージェントに引用される確率」を6+1領域・28項目で自動診断し、改善提案まで出すSaaSツール。BYOK（APIキー持ち込み）+ ラチェット型従量課金モデル。
 
 ## Current Status
 
 | Item | Status | Notes |
 |------|--------|-------|
-| GitHub Repo | ✅ Created (Private) | `koji276/FusionGEO-Analyzer` |
-| GEO Checklist (6領域20項目) | ✅ Confirmed | See `checklist/geo_checklist.json` |
-| Infographic (チェックリスト画像) | ✅ Generated | Gemini生成、PNG完成済み |
-| Blog/指南書 (完全保存版) | ✅ Written | Geminiセッションで1万字版完成 |
-| Architecture Design | ✅ Designed | 3-Engine構成（下記参照） |
-| Pricing Model | ✅ Designed | BYOK + ラチェット従量課金 |
-| Core Engine 1 (Static Crawler) | 🔧 In Progress | `core/static_crawler.py` — 骨格のみ |
-| Core Engine 2 (LLM Semantic) | ⬜ Not Started | `core/llm_analyzer.py` |
-| Core Engine 3 (Trust/Citation) | ⬜ Not Started | `core/trust_engine.py` |
-| Streamlit UI (app.py) | 🔧 In Progress | 骨格のみ、要リビルド |
-| Auto-Fix: llms.txt Generator | ⬜ Not Started | キラー機能 |
-| Auto-Fix: Chunk Rewriter | ⬜ Not Started | キラー機能 |
+| GitHub Repo | ✅ Deployed | `koji276/FusionGEO-Analyzer` (Private) |
+| Streamlit Cloud | ✅ Live | クイック解析で実動確認済み |
+| GEO Checklist | ✅ 7領域28項目 | D1-D6 + D7 Global Readiness |
+| Engine 1 (Static Crawler) | ✅ 稼働中 | 12チェック自動判定（D7-02含む） |
+| Engine 2 (LLM Semantic) | ✅ 実装済 | BYOK方式、Trust Graph + Global対応 |
+| Engine 3 (Trust/Citation) | 🔧 半自動 | Perplexityプロンプトコピー→ペースト方式 |
+| UI (app.py) | ✅ ハイブリッド版 | Plotlyレーダー、st.status、外部データ入力 |
+| D7 Global Readiness | ✅ 実装済 | トグルON/OFFで6⇔7角形動的切替 |
+| Auto-Fix: llms.txt生成 | ✅ 実装済 | フル解析モードで動作 |
+| Auto-Fix: チャンク・リライト | ✅ 実装済 | フル解析モードで動作 |
+| **改善提案エンジン** | ⬜ 未実装 | **次の最優先タスク** |
 
 ## Architecture
 
-### 3-Engine構成
+### 3-Engine + Human-in-the-Loop 構成
 
 ```
 User Input (URL + BYOK API Key)
         │
         ├─► Engine 1: Static Crawler (Rule-Based)
         │     Python (requests + BeautifulSoup)
-        │     → robots.txt解析、llms.txt存在チェック
-        │     → セマンティックHTML判定、Schema.org検出
-        │     → <time>タグ鮮度チェック、JS依存判定
+        │     → robots.txt, llms.txt, セマンティックHTML
+        │     → Schema.org, FAQ/HowTo, 鮮度, 画像alt
+        │     → D7-02: hreflang/英語リンク/多言語Entity
         │
-        ├─► Engine 2: LLM Semantic Analyzer (AI Evaluation)
-        │     BYOK API (GPT-4o / Claude etc.)
-        │     → チャンク化品質判定（段落長・結論位置）
-        │     → Information Gain判定（一次データ有無）
-        │     → POV強度評価（独自視点の鋭さ）
-        │     → 専門用語定義の検出
+        ├─► Engine 2: LLM Semantic Analyzer (BYOK)
+        │     OpenAI API (ユーザーのキー)
+        │     → コンテンツ品質 (D1-04, D3-04, D4-01~03)
+        │     → Trust Graph (D1-01~03) ← SNSペーストデータ
+        │     → Global Readiness (D7-01, D7-04) ← global_mode時
         │
-        └─► Engine 3: Trust & Citation Engine
-              外部API (Perplexity/Tavily等)
-              → Citation Share計測
-              → Entity共起チェック
-              → Verified Identity確認
-              
+        └─► Engine 3: Human + Perplexity (半自動)
+              → Perplexity用プロンプト自動生成→コピー
+              → 調査結果をペースト→LLMがスコア化
+              → Citation Share, センチメント (D6)
+              → Global Citation (D7-03)
+
         ↓
-  Score Aggregator (6領域レーダーチャート)
+  Score Aggregator (7領域均等配分 or 6領域加重平均)
         ↓
-  Auto-Fix Generator
-    → llms.txt自動生成
-    → チャンク・リライト提案
-    → JSON-LD構造化データ生成
+  改善提案エンジン ← 次のマイルストーン
+    → 特定ページの具体的改善案を生成
+    → SEO業者がクライアントに提案書として納品可能
 ```
 
-### 6領域・20項目マッピング
+### 7領域・28項目マッピング
 
 | 領域 | カテゴリ | Engine | 項目数 |
 |------|----------|--------|--------|
-| 領域1 | 人：Trust Graph | E2+E3 | 4項目 |
-| 領域2 | 技術：Extractability | E1 | 5項目 |
-| 領域3 | 技術：Semantic Density | E1+E2 | 4項目 |
-| 領域4 | 価値：Information Gain | E2 | 4項目 |
-| 領域5 | 拡張：Multimodal & PR | E2+E3 | 4項目 |
-| 領域6 | Audit：測定指標 | E3 | 3項目 |
+| D1 | 人：Trust Graph | E2+E3 | 4項目 |
+| D2 | 技術：Extractability | E1 | 5項目 |
+| D3 | 技術：Semantic Density | E1+E2 | 4項目 |
+| D4 | 価値：Information Gain | E2 | 4項目 |
+| D5 | 拡張：Multimodal & PR | E1+E3 | 4項目 |
+| D6 | Audit：測定指標 | E3 | 3項目 |
+| D7 | グローバル：Global Readiness | E1+E2 (optional) | 4項目 |
+
+### スコア計算
+
+- **6領域モード（Global OFF）**: D1-D6 加重平均（D1:20, D2:25, D3:15, D4:20, D5:10, D6:10）
+- **7領域モード（Global ON）**: D1-D7 均等配分（各 100/7 ≒ 14.3%）
+- **未評価項目は0点としてカウント**（領域の全項目数で割る）
 
 ### Tech Stack
 
 - **Backend**: Python 3.11+
-- **UI**: Streamlit (MVP) → React + Next.js (Production SaaS)
-- **Deploy**: Streamlit Community Cloud (MVP, Private枠1つ使用)
-- **LLM**: BYOK方式（ユーザーがOpenAI/Anthropic APIキーを入力）
+- **UI**: Streamlit + Plotly（レーダーチャート）
+- **Deploy**: Streamlit Community Cloud
+- **LLM**: BYOK方式（OpenAI API）
 - **Scraping**: requests + BeautifulSoup4
-- **Data**: pandas, numpy
-
-### Pricing Model (BYOK + Ratchet)
-
-```
-Base Fee:        $99/mo (ダッシュボード利用)
-Credits:         1 URL診断 = 1 credit
-                 改善提案生成 = 3 credits
-Ratchet Tiers:   一度到達したTierの最低保証額は下がらない
-LLM API Cost:    ユーザー負担（BYOK）
-```
 
 ## Development History
 
-### 2025-04-04 — Project Inception (Gemini Session)
-- GEO指南書（完全保存版・1万字）をGeminiで執筆完了
-- 4コア・アプローチ（人・技術・価値・拡張）+ Audit = 6領域・20項目体系を確立
+### 2026-04-04 — Gemini Session 1: 構想・指南書・インフォグラフィックス
+- GEO指南書（完全保存版・1万字）を執筆完了
+- 4コア・アプローチ（人・技術・価値・拡張）+ Audit = 6領域体系を確立
 - インフォグラフィックス（縦長チェックリスト）をGemini画像生成で作成
-- GitHub Private repo `koji276/FusionGEO-Analyzer` 作成
-- requirements.txt, app.py, core/static_crawler.py の骨格をGitHubに直接書き込み
-- 3-Engine構成のアーキテクチャ設計完了
-- BYOK + ラチェット型従量課金のビジネスモデル設計完了
-- SEO業者向けホワイトラベル提供・API連携・認定パートナー制度を構想
+- GitHub Private repo 作成、3-Engine構成設計、BYOK+ラチェット課金モデル設計
 
-### 2025-04-04 — Claude Session: Engine Implementation Start
+### 2026-04-04 — Claude Session 1: バックエンド完全実装
 - README.md をLLMハンドオフ形式で作成
-- `checklist/geo_checklist.json` — 6領域20項目のマスターデータ作成
-- `core/static_crawler.py` — Engine 1 完全実装
-- `core/llm_analyzer.py` — Engine 2 完全実装
+- `checklist/geo_checklist.json` — 6領域マスターデータ作成
+- `core/static_crawler.py` — Engine 1 完全実装（11チェック）
+- `core/llm_analyzer.py` — Engine 2 完全実装 + Auto-Fix機能
 - `core/scoring.py` — スコア集計ロジック実装
-- `app.py` — Streamlit MVP UI リビルド
+- `app.py` — Streamlit MVP UI
+
+### 2026-04-04 — Gemini Session 2: UI駆動開発・デプロイ・実動確認
+- app2.pyでモックアップUI確認（Plotlyレーダー、st.status）
+- ハイブリッド版app.pyを作成（Claude バックエンド + Gemini UI改善）
+- Streamlit Community Cloudにデプロイ、picocela.com/en/で実動確認（52点/C）
+- 外部データインポート機能追加（Perplexityプロンプトコピー、SNSペースト欄）
+- D7 Global Readiness（英語露出評価）の構想確定
+
+### 2026-04-05 — Claude Session 2: D7実装・スコア修正・Trust Graph統合
+- `core/llm_analyzer.py` に Trust Graph解析（D1-01〜D1-03）追加
+  - sns_data, px_data 引数追加（後方互換）
+  - SNS/Perplexityデータがある場合のみAPI呼び出し
+- D7 Global Readiness 全実装
+  - `geo_checklist.json` にD7（4項目）追加 → 7領域28項目
+  - `scoring.py` に global_mode 動的切替（6⇔7領域）
+  - `static_crawler.py` に D7-02（Multi-Entity Linkage）自動判定追加
+  - `llm_analyzer.py` に D7-01（EN-Social）, D7-04（EN-Content）追加
+  - app.pyにサイドバートグル、7角形レーダー、グローバルタブ追加
+- スコア計算修正
+  - 未評価項目を0点としてカウント（全項目数で割る）
+  - 7軸モードは均等配分に変更
+- picocela.com/en/ で実動確認: 27点(D)（グローバルON、クイック解析）
 
 ## Known Issues
 
 | Issue | Impact | Status |
 |-------|--------|--------|
-| Streamlit Private枠が1つしかない（無料プラン） | Medium | FusionAutoScan等と枠競合の可能性 |
-| Engine 3 (Trust/Citation) は外部API依存 | Low | MVP段階では自己申告チェックボックスで代替可 |
-| LLMプロンプトの精度チューニング未実施 | Medium | コミュニティ投下後にデータ収集して調整 |
+| Streamlit Private枠1つのみ | Low | 現在FusionGEOで使用中 |
+| Engine 3 は半自動（Perplexityコピペ） | Medium | MVP段階ではこれで十分 |
+| LLMプロンプト精度チューニング未実施 | Medium | 実データ蓄積後に調整 |
+| 改善提案エンジンが未実装 | High | **コンサル販売のコア機能** |
 
 ## Next Actions
 
-1. ✅ README.md 作成（LLMハンドオフ形式）
-2. ✅ `checklist/geo_checklist.json` 作成（20項目マスター）
-3. ✅ `core/static_crawler.py` Engine 1 完全実装
-4. ✅ `core/llm_analyzer.py` Engine 2 実装
-5. ✅ `core/scoring.py` スコア集計ロジック
-6. ✅ `app.py` Streamlit MVP リビルド
-7. ⬜ GitHub repo にpush（既存ファイル上書き）
-8. ⬜ Streamlit Community Cloud デプロイ
-9. ⬜ コミュニティ（PowerGPT 18,000人）投下用メッセージ作成
-10. ⬜ Engine 3 (Trust/Citation) 実装
-11. ⬜ Auto-Fix機能（llms.txt生成、チャンク・リライト）実装
+1. ⬜ **改善提案エンジン実装**（最優先）
+   - 特定ページURLを入力 → 具体的改善案を生成
+   - Before/After形式でリライト提案
+   - JSON-LD/llms.txt のコード生成（コピペで使える）
+   - SEO業者がクライアントに納品できるPDFレポート形式
+2. ⬜ コミュニティ（PowerGPT 18,000人）投下用メッセージ作成
+3. ⬜ Engine 2のプロンプト精度チューニング（実データ収集後）
+4. ⬜ D7-03（Global Citation Share）の半自動化
+5. ⬜ ホワイトラベル機能（SEO業者向け）
