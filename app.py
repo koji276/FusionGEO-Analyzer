@@ -172,11 +172,9 @@ if analyze_btn and target_url:
                 # 修正ポイント: インポートしたSNSデータとPerplexity回答を引数として渡す
                 # ※ core/llm_analyzer.py 側の実装がこれらを受け取れるようになっている前提です
                 e2_result = analyze_content_with_llm(
-                    page_html, 
-                    api_key, 
-                    llm_model, 
-                    sns_data=sns_data, 
-                    px_data=px_data
+                    page_html, api_key, llm_model, 
+                    sns_data=sns_data, px_data=px_data,
+                    global_mode=global_mode
                 )
                 if e2_result and e2_result.get("success", False):
                     st.write("✅ LLM解析完了")
