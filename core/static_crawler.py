@@ -576,6 +576,83 @@ def check_outbound_citations(soup: BeautifulSoup, url: str) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════
+# D7-02: Multi-Entity Linkage（日英エンティティ紐付け）
+# ═══════════════════════════════════════════════════════════════
+def check_global_entity_linkage(soup: BeautifulSoup, url: str) -> dict:
+    """hreflang、英語版リンク、多言語sameAsの検出"""
+    result = {
+        "id": "D7-02",
+        "score": 0,
+        "has_hreflang": False,
+        "has_en_alternate": False,
+        "en_sameAs_found": False,
+        "detail": ""
+    }
+    
+    signals = 0
+    
+    # hreflangタグの検出
+    hreflangs = soup.find_all("link", {"rel": "alternate", "hreflang": True})
+    if hreflangs:
+        result["has_hreflang"] = True
+        signals += 1
+        # 英語版が含まれるか
+        for tag in hreflangs:
+            lang = tag.get("hreflang", "").lower()
+            if lang.startswith("en"):
+                result["has_en_alternate"] = True
+                signals += 1
+                break
+    
+    # HTMLのlang属性チェック
+    html_tag = soup.find("html")
+    page_lang = html_tag.get("lang", "").lower() if html_tag else ""
+    is_english_page = page_lang.startswith("en")
+    if is_english_page:
+        signals += 1
+    
+    # 英語版ナビゲーションリンク（/en/, /english/, ?lang=en 等）
+    en_link_patterns = ["/en/", "/en-", "/english", "lang=en", "/intl/"]
+    for a in soup.find_all("a", href=True)[:100]:
+        href = a.get("href", "").lower()
+        for pattern in en_link_patterns:
+            if pattern in href:
+                signals += 1
+                break
+        if signals >= 4:
+            break
+    
+    # JSON-LDのsameAsで外国語サイトへの紐付け
+    scripts = soup.find_all("script", {"type": "application/ld+json"})
+    for script in scripts:
+        try:
+            text = script.string or ""
+            if "sameAs" in text:
+                # LinkedIn, GitHub等の英語プラットフォームへの紐付け
+                if any(p in text for p in ["linkedin.com", "github.com", "twitter.com", "x.com"]):
+                    result["en_sameAs_found"] = True
+                    signals += 1
+        except Exception:
+            continue
+    
+    # スコアリング
+    if signals >= 4:
+        result["score"] = 100
+        result["detail"] = "多言語対応優秀: hreflang、英語版ページ、グローバルEntity紐付けあり"
+    elif signals >= 2:
+        result["score"] = 60
+        result["detail"] = f"部分的な多言語対応: {signals}個のシグナル検出"
+    elif signals >= 1:
+        result["score"] = 30
+        result["detail"] = f"最低限のグローバル対応: {signals}個のシグナルのみ"
+    else:
+        result["score"] = 0
+        result["detail"] = "多言語対応なし — 英語圏AIからのEntity認識が困難"
+    
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════
 # メイン: 全チェック実行
 # ═══════════════════════════════════════════════════════════════
 def analyze_url(url: str) -> dict:
@@ -623,6 +700,7 @@ def analyze_url(url: str) -> dict:
     result["checks"].append(check_freshness(soup))           # D4-04
     result["checks"].append(check_image_alt(soup))           # D5-01
     result["checks"].append(check_outbound_citations(soup, url))  # D5-04
+    result["checks"].append(check_global_entity_linkage(soup, url))  # D7-02
     
     result["success"] = True
     return result
