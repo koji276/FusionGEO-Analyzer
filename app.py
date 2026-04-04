@@ -69,7 +69,15 @@ with st.sidebar:
         ["🚀 フル解析（Engine 1+2）", "⚡ クイック解析（Engine 1のみ）"],
         help="フル解析はLLMを使用するためAPIクレジットを消費します"
     )
-    
+
+    st.divider()
+    st.subheader("🌐 海外展開オプション")
+    global_mode = st.toggle(
+        "Global Readiness Audit",
+        value=False,
+        help="ONにすると、英語圏での露出やグローバルEntityとしての認知度を診断する「第7の軸」を追加します"
+    )
+
     st.divider()
     st.caption("v0.1 MVP — 6領域・20項目")
     st.caption("© 2026 FUSIONDRIVER, INC.")
@@ -188,7 +196,8 @@ if analyze_btn and target_url:
     scores = aggregate_scores(
         engine1_checks=e1_result.get("checks", {}),
         engine2_checks=e2_result.get("checks", {}) if e2_result else None,
-        manual_checks=manual_checks
+        manual_checks=manual_checks,
+        global_mode=global_mode
     )
     
     grade, grade_label = get_grade(scores["total_score"])
@@ -245,7 +254,8 @@ if analyze_btn and target_url:
     # ── 詳細結果（タブ） ──────────────────────────────
     st.subheader("🔍 詳細診断結果")
     
-    tab_names = [f"{DOMAIN_LABELS_SHORT[f'D{i+1}']}" for i in range(6)]
+    num_domains = 7 if global_mode else 6
+    tab_names = [f"{DOMAIN_LABELS_SHORT[f'D{i+1}']}" for i in range(num_domains)]
     tabs = st.tabs(tab_names)
     
     for i, tab in enumerate(tabs):
