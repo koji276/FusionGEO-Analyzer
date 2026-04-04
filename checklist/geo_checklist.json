@@ -1,0 +1,64 @@
+{
+  "domains": [
+    {
+      "name": "人",
+      "name_en": "Trust Graph",
+      "items": [
+        {"id": "D1-01", "title": "Verified Identity", "description": "著者情報・運営者情報が明確で、構造化されているか"},
+        {"id": "D1-02", "title": "Entity共起", "description": "外部の信頼できるサイトでEntityとして言及されているか"},
+        {"id": "D1-03", "title": "ソーシャルシグナル", "description": "SNS等のプラットフォームで専門家から共有されているか"},
+        {"id": "D1-04", "title": "著者オーソリティ", "description": "著者の専門性やE-E-A-Tが担保されているか"}
+      ]
+    },
+    {
+      "name": "技術",
+      "name_en": "Extractability",
+      "items": [
+        {"id": "D2-01", "title": "robots.txtの最適化", "description": "AIボット（OAI-SearchBot等）のクロールを許可しているか"},
+        {"id": "D2-02", "title": "llms.txtの設置", "description": "LLMが読み取りやすいプレーンテキストの要約ファイルが存在するか"},
+        {"id": "D2-03", "title": "セマンティックHTML", "description": "article, section等の意味論的なタグが正しく使われているか"},
+        {"id": "D2-04", "title": "表示速度・軽快さ", "description": "クローラーがタイムアウトせずに高速に取得できるか"},
+        {"id": "D2-05", "title": "JS非依存", "description": "JavaScriptがなくても主要なコンテンツが読み取れるか"}
+      ]
+    },
+    {
+      "name": "技術",
+      "name_en": "Semantic Density",
+      "items": [
+        {"id": "D3-01", "title": "構造化データ (JSON-LD)", "description": "Schema.orgに準拠した構造化データが存在するか"},
+        {"id": "D3-02", "title": "チャンクの最適化", "description": "LLMが処理しやすい段落長や、結論先行の構造になっているか"},
+        {"id": "D3-03", "title": "FAQ構造", "description": "Q&A形式など、直接的な回答となる構造が含まれているか"},
+        {"id": "D3-04", "title": "エンティティ密度", "description": "関連する専門用語や共起語が網羅されているか"}
+      ]
+    },
+    {
+      "name": "価値",
+      "name_en": "Information Gain",
+      "items": [
+        {"id": "D4-01", "title": "一次データ", "description": "独自の調査結果や統計など、他にないデータが含まれているか"},
+        {"id": "D4-02", "title": "独自視点 (POV)", "description": "一般的なまとめではなく、著者ならではの鋭い考察があるか"},
+        {"id": "D4-03", "title": "専門用語の定義", "description": "LLMが学習しやすいよう、概念や用語の明確な定義文があるか"},
+        {"id": "D4-04", "title": "情報の鮮度", "description": "タイムスタンプが最新で、内容がアップデートされているか"}
+      ]
+    },
+    {
+      "name": "拡張",
+      "name_en": "Multimodal & PR",
+      "items": [
+        {"id": "D5-01", "title": "画像最適化", "description": "画像のalt属性や前後のテキストが適切に設定されているか"},
+        {"id": "D5-02", "title": "動画の文字起こし", "description": "埋め込み動画の内容がテキスト化されているか"},
+        {"id": "D5-03", "title": "デジタルPR", "description": "外部メディアやプレスリリースを通じて露出しているか"},
+        {"id": "D5-04", "title": "引用フォーマット", "description": "AIがそのまま引用しやすい箇条書きや表が使われているか"}
+      ]
+    },
+    {
+      "name": "Audit",
+      "name_en": "測定指標",
+      "items": [
+        {"id": "D6-01", "title": "Citation Share", "description": "Perplexity等のAIエンジンからの参照率を計測しているか"},
+        {"id": "D6-02", "title": "センチメント分析", "description": "AIからの言及における好意度や文脈を把握しているか"},
+        {"id": "D6-03", "title": "ログ分析", "description": "サーバーログからAIボットのアクセス頻度を監視しているか"}
+      ]
+    }
+  ]
+}
