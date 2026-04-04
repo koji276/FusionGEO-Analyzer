@@ -242,6 +242,47 @@
           "check_method": "server_log_bot_analysis"
         }
       ]
+    },
+    {
+      "id": "D7",
+      "name": "グローバル：英語圏での露出と認知",
+      "name_en": "Global Readiness",
+      "engine": "E2+E3",
+      "optional": true,
+      "items": [
+        {
+          "id": "D7-01",
+          "title": "EN-Social Presence（英語SNS発信）",
+          "description": "LinkedIn等での英語発信の頻度と質（CEO/公式）は十分か？",
+          "auto_check": false,
+          "engine": "E2",
+          "check_method": "llm_en_social_analysis"
+        },
+        {
+          "id": "D7-02",
+          "title": "Multi-Entity Linkage（日英エンティティ紐付け）",
+          "description": "日本語と英語のエンティティがAI知識グラフ内で正しく紐付いているか？",
+          "auto_check": true,
+          "engine": "E1",
+          "check_method": "schema_hreflang_and_sameAs_check"
+        },
+        {
+          "id": "D7-03",
+          "title": "Global Citation Share（英語圏AI引用）",
+          "description": "英語圏のAIエンジン（Perplexity EN等）での引用実績があるか？",
+          "auto_check": false,
+          "engine": "E3",
+          "check_method": "en_ai_citation_check"
+        },
+        {
+          "id": "D7-04",
+          "title": "EN-Content Quality（英語コンテンツ品質）",
+          "description": "単なる機械翻訳ではなく、英語圏の読者に刺さる独自視点があるか？",
+          "auto_check": true,
+          "engine": "E2",
+          "check_method": "llm_en_content_quality"
+        }
+      ]
     }
   ],
   "scoring": {
@@ -253,6 +294,15 @@
       "D4": 20,
       "D5": 10,
       "D6": 10
+    },
+    "domain_weights_with_global": {
+      "D1": 15,
+      "D2": 20,
+      "D3": 12,
+      "D4": 18,
+      "D5": 8,
+      "D6": 7,
+      "D7": 20
     },
     "item_score": {
       "pass": 100,
